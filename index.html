@@ -30,7 +30,6 @@
         </div>
         <button onclick="addAddress()">Add Address</button>
         <button onclick="plotRoute()">Plot Route</button>
-        <button onclick="generateSharableURL()">Generate Sharable URL</button>
     </div>
     <div id="map"></div>
 
@@ -97,6 +96,7 @@
                     directionsRenderer.setDirections(result);
                     calculateDurations(result, labels, startTime, durations);
                     addMarkers(result, labels, startTime, durations);
+                    generateSharableURL();
                 } else {
                     console.error('Error:', status);
                 }
@@ -196,7 +196,7 @@
             urlParams.set('startTime', startTime);
 
             const sharableURL = `${window.location.origin}${window.location.pathname}?${urlParams.toString()}`;
-            prompt('Sharable URL:', sharableURL);
+            window.history.replaceState(null, '', sharableURL);
         }
 
         function loadFromURL() {
