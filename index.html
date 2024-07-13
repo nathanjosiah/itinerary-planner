@@ -18,11 +18,7 @@
     <div id="controls">
         <h3>Enter Addresses</h3>
         <div id="address-list">
-            <div>
-                <input type="text" placeholder="Label" class="label">
-                <input type="text" placeholder="Address" class="address">
-                <input type="number" placeholder="Duration (min)" class="duration">
-            </div>
+            <!-- Empty initially, populated via JavaScript -->
         </div>
         <div>
             <label for="start-time">Start Time:</label>
@@ -52,13 +48,13 @@
             loadFromURL();
         }
 
-        function addAddress() {
+        function addAddress(label = '', address = '', duration = '') {
             const addressList = document.getElementById('address-list');
             const newAddress = document.createElement('div');
             newAddress.innerHTML = `
-                <input type="text" placeholder="Label" class="label">
-                <input type="text" placeholder="Address" class="address">
-                <input type="number" placeholder="Duration (min)" class="duration">
+                <input type="text" value="${label}" placeholder="Label" class="label">
+                <input type="text" value="${address}" placeholder="Address" class="address">
+                <input type="number" value="${duration}" placeholder="Duration (min)" class="duration">
             `;
             addressList.appendChild(newAddress);
         }
@@ -211,13 +207,7 @@
 
                 const addressList = document.getElementById('address-list');
                 labels.forEach((label, i) => {
-                    const newAddress = document.createElement('div');
-                    newAddress.innerHTML = `
-                        <input type="text" value="${label}" placeholder="Label" class="label">
-                        <input type="text" value="${addresses[i]}" placeholder="Address" class="address">
-                        <input type="number" value="${durations[i]}" placeholder="Duration (min)" class="duration">
-                    `;
-                    addressList.appendChild(newAddress);
+                    addAddress(label, addresses[i], durations[i]);
                 });
 
                 plotRoute();
