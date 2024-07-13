@@ -19,7 +19,6 @@ function addAddress() {
     newAddress.innerHTML = `
         <input type="text" placeholder="Label" class="label">
         <input type="text" placeholder="Address" class="address">
-        <input type="datetime-local" class="datetime">
         <input type="number" placeholder="Duration (min)" class="duration">
     `;
     addressList.appendChild(newAddress);
@@ -28,8 +27,13 @@ function addAddress() {
 function plotRoute() {
     const labels = Array.from(document.getElementsByClassName('label')).map(el => el.value);
     const addresses = Array.from(document.getElementsByClassName('address')).map(el => el.value);
-    const datetimes = Array.from(document.getElementsByClassName('datetime')).map(el => el.value);
     const durations = Array.from(document.getElementsByClassName('duration')).map(el => el.value);
+    const startTime = document.getElementById('start-time').value;
+
+    if (!startTime) {
+        alert('Please enter the start time');
+        return;
+    }
 
     const waypoints = addresses.slice(1, -1).map((address, index) => ({
         location: address,
@@ -46,25 +50,27 @@ function plotRoute() {
     directionsService.route(request, (result, status) => {
         if (status == 'OK') {
             directionsRenderer.setDirections(result);
-            calculateDurations(result, labels, datetimes, durations);
+            calculateDurations(result, labels, startTime, durations);
         } else {
             console.error('Error:', status);
         }
     });
 }
 
-function calculateDurations(result, labels, datetimes, durations) {
+function calculateDurations(result, labels, startTime, durations) {
     const route = result.routes[0];
     const legTimes = route.legs.map(leg => leg.duration.value / 60); // convert to minutes
 
-    let output = 'Route Plan:\n';
+    let output = `Route Plan (Starting at ${new Date(startTime).toLocaleString()}):\n`;
+    let currentTime = new Date(startTime);
+
     for (let i = 0; i < labels.length; i++) {
-        output += `${labels[i]}: ${datetimes[i]}\n`;
+        output += `${labels[i]}: ${currentTime.toLocaleString()}\n`;
         if (i < legTimes.length) {
             const travelTime = legTimes[i];
-            const duration = durations[i];
-            const nextTime = new Date(new Date(datetimes[i]).getTime() + (travelTime + parseInt(duration)) * 60000);
-            output += `Travel Time: ${travelTime} mins, Next Stop: ${nextTime.toLocaleString()}\n`;
+            const duration = parseInt(durations[i]);
+            currentTime = new Date(currentTime.getTime() + (travelTime + duration) * 60000);
+            output += `Travel Time: ${travelTime} mins, Duration: ${duration} mins, Next Stop: ${currentTime.toLocaleString()}\n`;
         }
     }
     console.log(output);
