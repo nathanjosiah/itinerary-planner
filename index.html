@@ -21,9 +21,12 @@
             <div>
                 <input type="text" placeholder="Label" class="label">
                 <input type="text" placeholder="Address" class="address">
-                <input type="datetime-local" class="datetime">
                 <input type="number" placeholder="Duration (min)" class="duration">
             </div>
+        </div>
+        <div>
+            <label for="start-time">Start Time:</label>
+            <input type="datetime-local" id="start-time">
         </div>
         <button onclick="addAddress()">Add Address</button>
         <button onclick="plotRoute()">Plot Route</button>
