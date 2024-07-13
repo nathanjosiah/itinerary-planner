@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Maps Route Planner</title>
+    <style>
+        #map {
+            height: 80vh;
+            width: 100%;
+        }
+        #controls {
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <h3>Enter Addresses</h3>
+        <div id="address-list">
+            <div>
+                <input type="text" placeholder="Label" class="label">
+                <input type="text" placeholder="Address" class="address">
+                <input type="datetime-local" class="datetime">
+                <input type="number" placeholder="Duration (min)" class="duration">
+            </div>
+        </div>
+        <button onclick="addAddress()">Add Address</button>
+        <button onclick="plotRoute()">Plot Route</button>
+    </div>
+    <div id="map"></div>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
+    <script src="app.js"></script>
+</body>
+</html>
