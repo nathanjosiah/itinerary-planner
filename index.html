@@ -124,6 +124,8 @@
 
             let currentTime = new Date(startTime);
 
+            const infoWindow = new google.maps.InfoWindow();
+
             route.legs.forEach((leg, i) => {
                 const marker = new google.maps.Marker({
                     position: leg.start_location,
@@ -146,13 +148,12 @@
                     </div>
                 `;
 
-                const infowindow = new google.maps.InfoWindow({
-                    content: contentString
-                });
-
-                marker.addListener('click', () => {
-                    infowindow.open(map, marker);
-                });
+                google.maps.event.addListener(marker, 'click', (function(marker, contentString, infoWindow) {
+                    return function() {
+                        infoWindow.setContent(contentString);
+                        infoWindow.open(map, marker);
+                    };
+                })(marker, contentString, infoWindow));
 
                 if (i === route.legs.length - 1) {
                     // Add marker for the last destination
@@ -170,13 +171,12 @@
                         </div>
                     `;
 
-                    const lastInfowindow = new google.maps.InfoWindow({
-                        content: lastContentString
-                    });
-
-                    lastMarker.addListener('click', () => {
-                        lastInfowindow.open(map, lastMarker);
-                    });
+                    google.maps.event.addListener(lastMarker, 'click', (function(lastMarker, lastContentString, infoWindow) {
+                        return function() {
+                            infoWindow.setContent(lastContentString);
+                            infoWindow.open(map, lastMarker);
+                        };
+                    })(lastMarker, lastContentString, infoWindow));
                 }
             });
         }
