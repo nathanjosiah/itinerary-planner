@@ -30,10 +30,11 @@
         </div>
         <button onclick="addAddress()">Add Address</button>
         <button onclick="plotRoute()">Plot Route</button>
+        <button onclick="generateSharableURL()">Generate Sharable URL</button>
     </div>
     <div id="map"></div>
 
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCNyztbO4N4O5eyp2-EfFyx20nf5mmDKmM&libraries=places"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCNyztbO4N4O5eyp2-EfFyx20nf5mmDKmM&callback=initMap&libraries=places" async defer></script>
     <script>
         let map;
         let directionsService;
@@ -48,6 +49,8 @@
             directionsService = new google.maps.DirectionsService();
             directionsRenderer = new google.maps.DirectionsRenderer();
             directionsRenderer.setMap(map);
+
+            loadFromURL();
         }
 
         function addAddress() {
@@ -62,6 +65,11 @@
         }
 
         function plotRoute() {
+            if (!directionsService || !directionsRenderer) {
+                console.error('DirectionsService or DirectionsRenderer is not initialized.');
+                return;
+            }
+
             const labels = Array.from(document.getElementsByClassName('label')).map(el => el.value);
             const addresses = Array.from(document.getElementsByClassName('address')).map(el => el.value);
             const durations = Array.from(document.getElementsByClassName('duration')).map(el => el.value);
@@ -72,7 +80,7 @@
                 return;
             }
 
-            const waypoints = addresses.slice(1, -1).map((address, index) => ({
+            const waypoints = addresses.slice(1, -1).map((address) => ({
                 location: address,
                 stopover: true
             }));
@@ -85,9 +93,10 @@
             };
 
             directionsService.route(request, (result, status) => {
-                if (status == 'OK') {
+                if (status === 'OK') {
                     directionsRenderer.setDirections(result);
                     calculateDurations(result, labels, startTime, durations);
+                    addMarkers(result, labels, startTime, durations);
                 } else {
                     console.error('Error:', status);
                 }
@@ -111,6 +120,108 @@
                 }
             }
             console.log(output);
+        }
+
+        function addMarkers(result, labels, startTime, durations) {
+            const route = result.routes[0];
+            const legTimes = route.legs.map(leg => leg.duration.value / 60); // convert to minutes
+
+            let currentTime = new Date(startTime);
+
+            route.legs.forEach((leg, i) => {
+                const marker = new google.maps.Marker({
+                    position: leg.start_location,
+                    map: map,
+                    title: labels[i]
+                });
+
+                const duration = parseInt(durations[i]);
+                const arrivalTime = currentTime.toLocaleString();
+                currentTime = new Date(currentTime.getTime() + (leg.duration.value / 60 + duration) * 60000);
+                const departureTime = currentTime.toLocaleString();
+
+                const contentString = `
+                    <div>
+                        <h4>${labels[i]}</h4>
+                        <p>Arrival Time: ${arrivalTime}</p>
+                        <p>Duration: ${duration} mins</p>
+                        <p>Departure Time: ${departureTime}</p>
+                    </div>
+                `;
+
+                const infowindow = new google.maps.InfoWindow({
+                    content: contentString
+                });
+
+                marker.addListener('click', () => {
+                    infowindow.open(map, marker);
+                });
+
+                if (i === route.legs.length - 1) {
+                    // Add marker for the last destination
+                    const lastMarker = new google.maps.Marker({
+                        position: leg.end_location,
+                        map: map,
+                        title: labels[i + 1]
+                    });
+
+                    const lastContentString = `
+                        <div>
+                            <h4>${labels[i + 1]}</h4>
+                            <p>Arrival Time: ${currentTime.toLocaleString()}</p>
+                        </div>
+                    `;
+
+                    const lastInfowindow = new google.maps.InfoWindow({
+                        content: lastContentString
+                    });
+
+                    lastMarker.addListener('click', () => {
+                        lastInfowindow.open(map, lastMarker);
+                    });
+                }
+            });
+        }
+
+        function generateSharableURL() {
+            const labels = Array.from(document.getElementsByClassName('label')).map(el => el.value);
+            const addresses = Array.from(document.getElementsByClassName('address')).map(el => el.value);
+            const durations = Array.from(document.getElementsByClassName('duration')).map(el => el.value);
+            const startTime = document.getElementById('start-time').value;
+
+            const urlParams = new URLSearchParams();
+            urlParams.set('labels', JSON.stringify(labels));
+            urlParams.set('addresses', JSON.stringify(addresses));
+            urlParams.set('durations', JSON.stringify(durations));
+            urlParams.set('startTime', startTime);
+
+            const sharableURL = `${window.location.origin}${window.location.pathname}?${urlParams.toString()}`;
+            prompt('Sharable URL:', sharableURL);
+        }
+
+        function loadFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const labels = JSON.parse(urlParams.get('labels') || '[]');
+            const addresses = JSON.parse(urlParams.get('addresses') || '[]');
+            const durations = JSON.parse(urlParams.get('durations') || '[]');
+            const startTime = urlParams.get('startTime');
+
+            if (labels.length && addresses.length && durations.length && startTime) {
+                document.getElementById('start-time').value = startTime;
+
+                const addressList = document.getElementById('address-list');
+                labels.forEach((label, i) => {
+                    const newAddress = document.createElement('div');
+                    newAddress.innerHTML = `
+                        <input type="text" value="${label}" placeholder="Label" class="label">
+                        <input type="text" value="${addresses[i]}" placeholder="Address" class="address">
+                        <input type="number" value="${durations[i]}" placeholder="Duration (min)" class="duration">
+                    `;
+                    addressList.appendChild(newAddress);
+                });
+
+                plotRoute();
+            }
         }
 
         window.initMap = initMap;
