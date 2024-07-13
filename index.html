@@ -119,67 +119,71 @@
         }
 
         function addMarkers(result, labels, startTime, durations) {
-            const route = result.routes[0];
-            const legTimes = route.legs.map(leg => leg.duration.value / 60); // convert to minutes
+    const route = result.routes[0];
+    const legTimes = route.legs.map(leg => leg.duration.value / 60); // convert to minutes
 
-            let currentTime = new Date(startTime);
+    let currentTime = new Date(startTime);
 
-            const infoWindow = new google.maps.InfoWindow();
+    const infoWindow = new google.maps.InfoWindow();
 
-            route.legs.forEach((leg, i) => {
-                const marker = new google.maps.Marker({
-                    position: leg.start_location,
-                    map: map,
-                    title: labels[i]
-                });
+    route.legs.forEach((leg, i) => {
+        const marker = new google.maps.Marker({
+            position: leg.start_location,
+            map: map,
+            title: labels[i]
+        });
 
-                const duration = parseInt(durations[i]);
-                const arrivalTime = currentTime.toLocaleString();
-                currentTime = new Date(currentTime.getTime() + (leg.duration.value / 60 + duration) * 60000);
-                const departureTime = currentTime.toLocaleString();
+        const duration = parseInt(durations[i]);
+        const arrivalTime = currentTime.toLocaleString();
+        currentTime = new Date(currentTime.getTime() + (leg.duration.value / 60 + duration) * 60000);
+        const departureTime = currentTime.toLocaleString();
 
-                const contentString = `
-                    <div>
-                        <h4>${labels[i]}</h4>
-                        <p>Address: ${leg.start_address}</p>
-                        <p>Arrival Time: ${arrivalTime}</p>
-                        <p>Duration: ${duration} mins</p>
-                        <p>Departure Time: ${departureTime}</p>
-                    </div>
-                `;
+        const contentString = `
+            <div>
+                <h4>${labels[i]}</h4>
+                <p>Address: ${leg.start_address}</p>
+                <p>Arrival Time: ${arrivalTime}</p>
+                <p>Duration: ${duration} mins</p>
+                <p>Departure Time: ${departureTime}</p>
+            </div>
+        `;
 
-                google.maps.event.addListener(marker, 'click', (function(marker, contentString, infoWindow) {
-                    return function() {
-                        infoWindow.setContent(contentString);
-                        infoWindow.open(map, marker);
-                    };
-                })(marker, contentString, infoWindow));
+        console.log('Adding marker:', labels[i], leg.start_location); // Debug log
 
-                if (i === route.legs.length - 1) {
-                    // Add marker for the last destination
-                    const lastMarker = new google.maps.Marker({
-                        position: leg.end_location,
-                        map: map,
-                        title: labels[i + 1]
-                    });
+        marker.addListener('click', function() {
+            console.log('Marker clicked:', labels[i]); // Debug log
+            alert('Marker clicked: ' + labels[i]); // Simple alert
+            infoWindow.setContent(contentString);
+            infoWindow.open(map, marker);
+        });
 
-                    const lastContentString = `
-                        <div>
-                            <h4>${labels[i + 1]}</h4>
-                            <p>Address: ${leg.end_address}</p>
-                            <p>Arrival Time: ${currentTime.toLocaleString()}</p>
-                        </div>
-                    `;
+        if (i === route.legs.length - 1) {
+            // Add marker for the last destination
+            const lastMarker = new google.maps.Marker({
+                position: leg.end_location,
+                map: map,
+                title: labels[i + 1]
+            });
 
-                    google.maps.event.addListener(lastMarker, 'click', (function(lastMarker, lastContentString, infoWindow) {
-                        return function() {
-                            infoWindow.setContent(lastContentString);
-                            infoWindow.open(map, lastMarker);
-                        };
-                    })(lastMarker, lastContentString, infoWindow));
-                }
+            const lastContentString = `
+                <div>
+                    <h4>${labels[i + 1]}</h4>
+                    <p>Address: ${leg.end_address}</p>
+                    <p>Arrival Time: ${currentTime.toLocaleString()}</p>
+                </div>
+            `;
+
+            console.log('Adding last marker:', labels[i + 1], leg.end_location); // Debug log
+
+            lastMarker.addListener('click', function() {
+                console.log('Last Marker clicked:', labels[i + 1]); // Debug log
+                alert('Last Marker clicked: ' + labels[i + 1]); // Simple alert
+                infoWindow.setContent(lastContentString);
+                infoWindow.open(map, lastMarker);
             });
         }
+    });
+}
 
         function generateSharableURL() {
             const labels = Array.from(document.getElementsByClassName('label')).map(el => el.value);
