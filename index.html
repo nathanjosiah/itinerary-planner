@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,11 +10,13 @@
             height: 80vh;
             width: 100%;
         }
+
         #controls {
             margin: 10px;
         }
     </style>
 </head>
+
 <body>
     <div id="controls">
         <h3>Enter Addresses</h3>
@@ -29,191 +32,10 @@
     </div>
     <div id="map"></div>
 
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCNyztbO4N4O5eyp2-EfFyx20nf5mmDKmM&callback=initMap&libraries=places" async defer></script>
-    <script>
-        let map;
-        let directionsService;
-        let directionsRenderer;
-
-        function initMap() {
-            map = new google.maps.Map(document.getElementById('map'), {
-                zoom: 10,
-                center: { lat: -34.397, lng: 150.644 }
-            });
-
-            directionsService = new google.maps.DirectionsService();
-            directionsRenderer = new google.maps.DirectionsRenderer();
-            directionsRenderer.setMap(map);
-
-            loadFromURL();
-        }
-
-        function addAddress(label = '', address = '', duration = '') {
-            const addressList = document.getElementById('address-list');
-            const newAddress = document.createElement('div');
-            newAddress.innerHTML = `
-                <input type="text" value="${label}" placeholder="Label" class="label">
-                <input type="text" value="${address}" placeholder="Address" class="address">
-                <input type="number" value="${duration}" placeholder="Duration (min)" class="duration">
-            `;
-            addressList.appendChild(newAddress);
-        }
-
-        function plotRoute() {
-    if (!directionsService || !directionsRenderer) {
-        console.error('DirectionsService or DirectionsRenderer is not initialized.');
-        return;
-    }
-
-    const labels = Array.from(document.getElementsByClassName('label')).map(el => el.value);
-    const addresses = Array.from(document.getElementsByClassName('address')).map(el => el.value);
-    const durations = Array.from(document.getElementsByClassName('duration')).map(el => el.value);
-    const startTime = document.getElementById('start-time').value;
-
-    if (!startTime) {
-        alert('Please enter the start time');
-        return;
-    }
-
-    const waypoints = addresses.slice(1, -1).map((address) => ({
-        location: address,
-        stopover: true
-    }));
-
-    const request = {
-        origin: addresses[0],
-        destination: addresses[addresses.length - 1],
-        waypoints: waypoints,
-        travelMode: google.maps.TravelMode.DRIVING
-    };
-
-    directionsService.route(request, (result, status) => {
-        if (status === 'OK') {
-            directionsRenderer.setDirections(result);
-
-            // Add a static test marker after directions are rendered
-            const testMarker = new google.maps.Marker({
-                position: result.routes[0].legs[0].start_location,
-                map: map,
-                title: 'Static Test Marker'
-            });
-
-            const testInfoWindow = new google.maps.InfoWindow({
-                content: '<div><h4>Static Test Marker</h4><p>This is a static test marker.</p></div>'
-            });
-
-            testMarker.addListener('click', function() {
-                console.log('Static Test Marker clicked');
-                alert('Static Test Marker clicked');
-                testInfoWindow.open(map, testMarker);
-            });
-
-            // Proceed with adding dynamic markers
-            addMarkers(result, labels, startTime, durations);
-            generateSharableURL();
-        } else {
-            console.error('Error:', status);
-        }
-    });
-}
-
-function addMarkers(result, labels, startTime, durations) {
-    const route = result.routes[0];
-    const legTimes = route.legs.map(leg => leg.duration.value / 60); // convert to minutes
-
-    let currentTime = new Date(startTime);
-    const infoWindow = new google.maps.InfoWindow();
-
-    route.legs.forEach((leg, i) => {
-        const marker = new google.maps.Marker({
-            position: leg.start_location,
-            map: map,
-            title: labels[i]
-        });
-
-        const duration = parseInt(durations[i]);
-        const arrivalTime = currentTime.toLocaleString();
-        currentTime = new Date(currentTime.getTime() + (leg.duration.value / 60 + duration) * 60000);
-        const departureTime = currentTime.toLocaleString();
-
-        const contentString = `
-            <div>
-                <h4>${labels[i]}</h4>
-                <p>Address: ${leg.start_address}</p>
-                <p>Arrival Time: ${arrivalTime}</p>
-                <p>Duration: ${duration} mins</p>
-                <p>Departure Time: ${departureTime}</p>
-            </div>
-        `;
-
-        console.log('Adding marker:', labels[i], leg.start_location); // Debug log
-
-        marker.addListener('click', () => {
-            console.log('Marker clicked:', labels[i]); // Debug log
-            alert('Marker clicked: ' + labels[i]); // Simple alert
-            infoWindow.setContent(contentString);
-            infoWindow.open(map, marker);
-        });
-    });
-}
-
-        function calculateDurations(result, labels, startTime, durations) {
-            const route = result.routes[0];
-            const legTimes = route.legs.map(leg => leg.duration.value / 60); // convert to minutes
-
-            let output = `Route Plan (Starting at ${new Date(startTime).toLocaleString()}):\n`;
-            let currentTime = new Date(startTime);
-
-            for (let i = 0; i < labels.length; i++) {
-                output += `${labels[i]}: ${currentTime.toLocaleString()}\n`;
-                if (i < legTimes.length) {
-                    const travelTime = legTimes[i];
-                    const duration = parseInt(durations[i]);
-                    currentTime = new Date(currentTime.getTime() + (travelTime + duration) * 60000);
-                    output += `Travel Time: ${travelTime} mins, Duration: ${duration} mins, Next Stop: ${currentTime.toLocaleString()}\n`;
-                }
-            }
-            console.log(output);
-        }
-
-        
-
-        function generateSharableURL() {
-            const labels = Array.from(document.getElementsByClassName('label')).map(el => el.value);
-            const addresses = Array.from(document.getElementsByClassName('address')).map(el => el.value);
-            const durations = Array.from(document.getElementsByClassName('duration')).map(el => el.value);
-            const startTime = document.getElementById('start-time').value;
-
-            const urlParams = new URLSearchParams();
-            urlParams.set('labels', JSON.stringify(labels));
-            urlParams.set('addresses', JSON.stringify(addresses));
-            urlParams.set('durations', JSON.stringify(durations));
-            urlParams.set('startTime', startTime);
-
-            const sharableURL = `${window.location.origin}${window.location.pathname}?${urlParams.toString()}`;
-            window.history.replaceState(null, '', sharableURL);
-        }
-
-        function loadFromURL() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const labels = JSON.parse(urlParams.get('labels') || '[]');
-            const addresses = JSON.parse(urlParams.get('addresses') || '[]');
-            const durations = JSON.parse(urlParams.get('durations') || '[]');
-            const startTime = urlParams.get('startTime');
-
-            if (labels.length && addresses.length && durations.length && startTime) {
-                document.getElementById('start-time').value = startTime;
-
-                const addressList = document.getElementById('address-list');
-                labels.forEach((label, i) => {
-                    addAddress(label, addresses[i], durations[i]);
-                });
-
-                plotRoute();
-            }
-        }
-
-        window.initMap = initMap;
-    </script>
+    <script
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCNyztbO4N4O5eyp2-EfFyx20nf5mmDKmM&callback=initMap&libraries=places&loading=async"
+        async defer></script>
+    <script src="app.js"></script>
 </body>
+
 </html>
